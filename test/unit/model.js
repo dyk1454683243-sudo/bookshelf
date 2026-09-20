@@ -87,55 +87,61 @@ module.exports = function() {
       });
 
       describe('auto-refresh options (#2047)', () => {
-        function saveWithRefresh(method, saveOptions) {
+        function saveAndCaptureRefresh(method, saveOptions) {
           const model = new Model({id: 1}, {tableName: 'customers'});
-          const syncOptions = [];
+          const refresh = sinon.stub(model, 'refresh').resolves(model);
 
-          model.sync = function(opts) {
-            syncOptions.push(opts);
+          model.sync = () => {
             return {
               insert: () => Promise.resolve([1]),
-              update: () => Promise.resolve(1),
-              first: () => Promise.resolve([{id: 1, email: 'test@test.com'}])
+              update: () => Promise.resolve(1)
             };
           };
 
-          return model.save(null, Object.assign({method}, saveOptions)).then(() => syncOptions);
+          return model.save(null, Object.assign({method}, saveOptions)).then(() => ({model, refresh}));
         }
 
-        it('preserves withSchema on the refresh query after insert', () => {
-          return saveWithRefresh('insert', {withSchema: 'customer_db_test', debug: true}).then((syncOptions) => {
-            expect(syncOptions).to.have.lengthOf(2);
-            expect(syncOptions[0].withSchema).to.equal('customer_db_test');
-            expect(syncOptions[1].withSchema).to.equal('customer_db_test');
-            expect(syncOptions[1].debug).to.equal(true);
-            expect(syncOptions[1].silent).to.equal(true);
+        it('preserves withSchema on refresh after insert', () => {
+          return saveAndCaptureRefresh('insert', {withSchema: 'customer_db_test', debug: true}).then(({refresh}) => {
+            expect(refresh).to.have.been.calledOnce;
+            expect(refresh.firstCall.args[0]).to.include({
+              silent: true,
+              withSchema: 'customer_db_test',
+              debug: true
+            });
           });
         });
 
-        it('preserves withSchema on the refresh query after update', () => {
-          return saveWithRefresh('update', {withSchema: 'customer_db_test'}).then((syncOptions) => {
-            expect(syncOptions).to.have.lengthOf(2);
-            expect(syncOptions[0].withSchema).to.equal('customer_db_test');
-            expect(syncOptions[1].withSchema).to.equal('customer_db_test');
-            expect(syncOptions[1].silent).to.equal(true);
+        it('preserves withSchema on refresh after update', () => {
+          return saveAndCaptureRefresh('update', {withSchema: 'customer_db_test'}).then(({refresh}) => {
+            expect(refresh).to.have.been.calledOnce;
+            expect(refresh.firstCall.args[0]).to.include({
+              silent: true,
+              withSchema: 'customer_db_test'
+            });
           });
         });
 
         it('preserves withSchema together with transacting on refresh', () => {
           const trx = {isTransaction: true};
 
-          return saveWithRefresh('insert', {withSchema: 'customer_db_test', transacting: trx}).then((syncOptions) => {
-            expect(syncOptions[1].withSchema).to.equal('customer_db_test');
-            expect(syncOptions[1].transacting).to.equal(trx);
-          });
+          return saveAndCaptureRefresh('insert', {withSchema: 'customer_db_test', transacting: trx}).then(
+            ({refresh}) => {
+              expect(refresh.firstCall.args[0]).to.include({
+                silent: true,
+                withSchema: 'customer_db_test'
+              });
+              expect(refresh.firstCall.args[0].transacting).to.equal(trx);
+            }
+          );
         });
 
         it('does not refresh when autoRefresh is false', () => {
-          return saveWithRefresh('insert', {withSchema: 'customer_db_test', autoRefresh: false}).then((syncOptions) => {
-            expect(syncOptions).to.have.lengthOf(1);
-            expect(syncOptions[0].withSchema).to.equal('customer_db_test');
-          });
+          return saveAndCaptureRefresh('insert', {withSchema: 'customer_db_test', autoRefresh: false}).then(
+            ({refresh}) => {
+              expect(refresh).not.to.have.been.called;
+            }
+          );
         });
       });
     });
