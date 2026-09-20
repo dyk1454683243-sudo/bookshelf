@@ -85,6 +85,65 @@ module.exports = function() {
           });
         });
       });
+
+      describe('auto-refresh options (#2047)', () => {
+        function saveAndCaptureRefresh(method, saveOptions) {
+          const model = new Model({id: 1}, {tableName: 'customers'});
+          const refresh = sinon.stub(model, 'refresh').resolves(model);
+
+          model.sync = () => {
+            return {
+              insert: () => Promise.resolve([1]),
+              update: () => Promise.resolve(1)
+            };
+          };
+
+          return model.save(null, Object.assign({method}, saveOptions)).then(() => ({model, refresh}));
+        }
+
+        it('preserves withSchema on refresh after insert', () => {
+          return saveAndCaptureRefresh('insert', {withSchema: 'customer_db_test', debug: true}).then(({refresh}) => {
+            expect(refresh).to.have.been.calledOnce;
+            expect(refresh.firstCall.args[0]).to.include({
+              silent: true,
+              withSchema: 'customer_db_test',
+              debug: true
+            });
+          });
+        });
+
+        it('preserves withSchema on refresh after update', () => {
+          return saveAndCaptureRefresh('update', {withSchema: 'customer_db_test'}).then(({refresh}) => {
+            expect(refresh).to.have.been.calledOnce;
+            expect(refresh.firstCall.args[0]).to.include({
+              silent: true,
+              withSchema: 'customer_db_test'
+            });
+          });
+        });
+
+        it('preserves withSchema together with transacting on refresh', () => {
+          const trx = {isTransaction: true};
+
+          return saveAndCaptureRefresh('insert', {withSchema: 'customer_db_test', transacting: trx}).then(
+            ({refresh}) => {
+              expect(refresh.firstCall.args[0]).to.include({
+                silent: true,
+                withSchema: 'customer_db_test'
+              });
+              expect(refresh.firstCall.args[0].transacting).to.equal(trx);
+            }
+          );
+        });
+
+        it('does not refresh when autoRefresh is false', () => {
+          return saveAndCaptureRefresh('insert', {withSchema: 'customer_db_test', autoRefresh: false}).then(
+            ({refresh}) => {
+              expect(refresh).not.to.have.been.called;
+            }
+          );
+        });
+      });
     });
 
     describe('#timestamp()', function() {

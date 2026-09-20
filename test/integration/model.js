@@ -515,6 +515,16 @@ module.exports = function(bookshelf) {
             expect(model.get('name')).to.equal('knexjs.org');
           });
       });
+
+      it('uses the schema name passed in options', function() {
+        if (dialect !== 'postgresql') return this.skip();
+
+        return new Models.TestAuthor({id: 1, name: 'NOT THE CORRECT NAME'})
+          .refresh({withSchema: 'test'})
+          .then(function(author) {
+            expect(author.get('name')).to.eql('Ryan Coogler');
+          });
+      });
     });
 
     describe('#fetch()', function() {
@@ -1328,6 +1338,120 @@ module.exports = function(bookshelf) {
         return member.save({name: 'Shuri'}).then(() => {
           equal(isFetchedTriggered, false);
         });
+      });
+
+      it('preserves withSchema on the auto-refresh query after save (#2047)', function() {
+        const schema = 'customer_db_test';
+        const knex = bookshelf.knex;
+        const queries = [];
+        const onQuery = function(data) {
+          queries.push(data.sql);
+        };
+
+        const defineCustomers = function(table) {
+          table.increments('id');
+          table.string('email');
+          table.string('first_name');
+        };
+
+        const setupSchema = function() {
+          if (dialect === 'sqlite3') {
+            return knex.raw('ATTACH DATABASE ? AS ??', [':memory:', schema]).then(function() {
+              return knex.schema.withSchema(schema).createTable('customers', defineCustomers);
+            });
+          }
+
+          if (dialect === 'mysql') {
+            return knex.raw('CREATE DATABASE IF NOT EXISTS ??', [schema]).then(function() {
+              return knex.schema
+                .withSchema(schema)
+                .dropTableIfExists('customers')
+                .then(function() {
+                  return knex.schema.withSchema(schema).createTable('customers', defineCustomers);
+                });
+            });
+          }
+
+          if (dialect === 'postgresql') {
+            return knex.raw('CREATE SCHEMA IF NOT EXISTS ??', [schema]).then(function() {
+              return knex.schema
+                .withSchema(schema)
+                .dropTableIfExists('customers')
+                .then(function() {
+                  return knex.schema.withSchema(schema).createTable('customers', defineCustomers);
+                });
+            });
+          }
+
+          return Promise.reject(new Error('Unsupported dialect ' + dialect));
+        };
+
+        const teardownSchema = function() {
+          return knex.schema
+            .withSchema(schema)
+            .dropTableIfExists('customers')
+            .then(function() {
+              if (dialect === 'sqlite3') return knex.raw('DETACH DATABASE ??', [schema]);
+              if (dialect === 'mysql') return knex.raw('DROP DATABASE IF EXISTS ??', [schema]);
+              if (dialect === 'postgresql') return knex.raw('DROP SCHEMA IF EXISTS ?? CASCADE', [schema]);
+            })
+            .catch(function() {});
+        };
+
+        // Databases that support RETURNING skip refresh; unwrap the row so the
+        // MySQL-style SELECT refresh path (the #2047 failure) is always used.
+        const forceRefreshPath = function(model) {
+          const originalSync = model.sync.bind(model);
+          model.sync = function(options) {
+            const syncer = originalSync(options);
+            const insert = syncer.insert.bind(syncer);
+            syncer.insert = function() {
+              return insert().then(function(resp) {
+                if (resp && typeof resp[0] === 'object') {
+                  const id = resp[0][model.idAttribute] != null ? resp[0][model.idAttribute] : resp[0].id;
+                  return [id];
+                }
+                return resp;
+              });
+            };
+            return syncer;
+          };
+        };
+
+        return setupSchema()
+          .then(function() {
+            const Customer = bookshelf.Model.extend({tableName: 'customers'});
+            const customer = Customer.forge({email: 'test@test.com', first_name: 'Test'});
+            forceRefreshPath(customer);
+            knex.on('query', onQuery);
+
+            return customer.save(null, {method: 'insert', withSchema: schema});
+          })
+          .then(function(saved) {
+            expect(saved.get('email')).to.equal('test@test.com');
+            expect(saved.get('first_name')).to.equal('Test');
+            expect(saved.id).to.exist;
+
+            const insertQueries = queries.filter(function(sql) {
+              return /insert/i.test(sql) && /customers/i.test(sql);
+            });
+            const selectQueries = queries.filter(function(sql) {
+              return /select/i.test(sql) && /customers/i.test(sql);
+            });
+
+            expect(insertQueries.length).to.be.above(0);
+            expect(selectQueries.length).to.be.above(0);
+            insertQueries.forEach(function(sql) {
+              expect(sql).to.include(schema);
+            });
+            selectQueries.forEach(function(sql) {
+              expect(sql).to.include(schema);
+            });
+          })
+          .finally(function() {
+            knex.removeListener('query', onQuery);
+            return teardownSchema();
+          });
       });
 
       it('rejects if the saving event throws an error', function() {
