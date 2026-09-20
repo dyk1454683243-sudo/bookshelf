@@ -1150,12 +1150,20 @@ module.exports = function(Bookshelf) {
           withRelated: 'imageableParsed.meta',
           log: true
         }).then(function(photos) {
+          var parsedCount = 0;
+
           photos.forEach(function(photo) {
-            var attrs = photo.related('imageableParsed').attributes;
+            var related = photo.related('imageableParsed');
+            // A later test inserts a photo whose imageable does not exist.
+            if (related == null) return;
+            parsedCount++;
+            var attrs = related.attributes;
             Object.keys(attrs).forEach(function(key) {
               expect(/_parsed$/.test(key)).to.be.true;
             });
           });
+
+          expect(parsedCount).to.be.above(0);
         });
       });
 

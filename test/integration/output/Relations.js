@@ -436,6 +436,7 @@ module.exports = {
       result: {
         id: 3,
         name: 'backbonejs.org',
+        meta: null,
         blogs: [],
         authors: []
       }
@@ -445,13 +446,15 @@ module.exports = {
         id: 3,
         name: 'backbonejs.org',
         authors: [],
-        blogs: []
+        blogs: [],
+        meta: null
       }
     },
     sqlite3: {
       result: {
         id: 3,
         name: 'backbonejs.org',
+        meta: null,
         blogs: [],
         authors: []
       }
