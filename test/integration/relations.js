@@ -331,6 +331,71 @@ module.exports = function(Bookshelf) {
         });
       });
 
+      describe('Issue #2046 - saving related models loaded via collection', function() {
+        function saveAndRestore(related, attr, nextValue) {
+          var original = related.get(attr);
+          var RelatedModel = related.constructor;
+          var idAttribute = related.idAttribute;
+          var id = related.id;
+
+          return related
+            .save({[attr]: nextValue})
+            .then(function(saved) {
+              expect(saved.get(attr)).to.equal(nextValue);
+              return RelatedModel.forge({[idAttribute]: id}).fetch();
+            })
+            .then(function(refetched) {
+              expect(refetched.get(attr)).to.equal(nextValue);
+            })
+            .finally(function() {
+              return RelatedModel.forge({[idAttribute]: id}).save(
+                {[attr]: original},
+                {patch: true, autoRefresh: false}
+              );
+            });
+        }
+
+        it('sets parentFk on a hasOne related model eager-loaded with fetchAll', function() {
+          return Site.fetchAll({withRelated: ['meta']}).then(function(sites) {
+            expect(sites.get(1).related('meta').relatedData.parentFk).to.equal(1);
+            expect(sites.get(2).related('meta').relatedData.parentFk).to.equal(2);
+          });
+        });
+
+        it('can save a hasOne related model eager-loaded with fetchAll', function() {
+          return Site.fetchAll({withRelated: ['meta']}).then(function(sites) {
+            return saveAndRestore(sites.get(1).related('meta'), 'description', 'Updated for #2046');
+          });
+        });
+
+        it('sets parentFk on a belongsTo related model eager-loaded with fetchAll', function() {
+          return Blog.fetchAll({withRelated: ['site']}).then(function(blogs) {
+            expect(blogs.get(1).related('site').relatedData.parentFk).to.equal(1);
+          });
+        });
+
+        it('can save a belongsTo related model eager-loaded with fetchAll', function() {
+          return Blog.fetchAll({withRelated: ['site']}).then(function(blogs) {
+            return saveAndRestore(blogs.get(1).related('site'), 'name', 'Updated for #2046');
+          });
+        });
+
+        it('can save a hasOne related model eager-loaded with Collection#load', function() {
+          return Site.fetchAll().then(function(sites) {
+            return sites.load('meta').then(function() {
+              return saveAndRestore(sites.get(1).related('meta'), 'description', 'Updated via load #2046');
+            });
+          });
+        });
+
+        it('still saves a hasOne related model loaded via Model#fetch', function() {
+          return new Site({id: 1}).fetch({withRelated: ['meta']}).then(function(site) {
+            expect(site.related('meta').relatedData.parentFk).to.equal(1);
+            return saveAndRestore(site.related('meta'), 'description', 'Updated via fetch #2046');
+          });
+        });
+      });
+
       describe('Nested Eager Loading - Models', function() {
         it('eager loads "hasMany" -> "hasMany" (site -> authors.ownPosts)', function() {
           return new Site({id: 1})
