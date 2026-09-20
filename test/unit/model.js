@@ -215,6 +215,37 @@ module.exports = function() {
         });
       });
 
+      it('serializes missing single relations as null', function() {
+        testModel.relations = {
+          site: null
+        };
+        equal(testModel.toJSON().site, null);
+      });
+
+      it('serializes empty related models as null instead of {}', function() {
+        testModel.relations = {
+          site: new Model()
+        };
+        equal(testModel.toJSON().site, null);
+      });
+
+      it('omits null relations when {omitNew: true} is passed', function() {
+        testModel.relations = {
+          site: null,
+          someRel: new Model({id: 3})
+        };
+        var json = testModel.toJSON({omitNew: true});
+        expect(json).to.not.have.property('site');
+        deepEqual(json.someRel, {id: 3});
+      });
+
+      it('clones null relations as null', function() {
+        testModel.relations = {
+          site: null
+        };
+        expect(testModel.clone().related('site')).to.equal(null);
+      });
+
       describe('with "visible" option', function() {
         it('only shows the fields specified in the model\'s "visible" property', function() {
           testModel.visible = ['firstName'];

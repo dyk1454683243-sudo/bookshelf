@@ -318,21 +318,24 @@ module.exports = {
       result: {
         id: 5,
         site_id: null,
-        name: 'Orphan Blog Without a Site'
+        name: 'Orphan Blog Without a Site',
+        site: null
       }
     },
     postgresql: {
       result: {
         id: 5,
         site_id: null,
-        name: 'Orphan Blog Without a Site'
+        name: 'Orphan Blog Without a Site',
+        site: null
       }
     },
     sqlite3: {
       result: {
         id: 5,
         site_id: null,
-        name: 'Orphan Blog Without a Site'
+        name: 'Orphan Blog Without a Site',
+        site: null
       }
     }
   },
@@ -534,7 +537,7 @@ module.exports = {
         {
           id: 3,
           name: 'backbonejs.org',
-          meta: {}
+          meta: null
         }
       ]
     },
@@ -561,7 +564,7 @@ module.exports = {
         {
           id: 3,
           name: 'backbonejs.org',
-          meta: {}
+          meta: null
         }
       ]
     },
@@ -588,7 +591,7 @@ module.exports = {
         {
           id: 3,
           name: 'backbonejs.org',
-          meta: {}
+          meta: null
         }
       ]
     }
@@ -635,7 +638,8 @@ module.exports = {
         {
           id: 5,
           site_id: null,
-          name: 'Orphan Blog Without a Site'
+          name: 'Orphan Blog Without a Site',
+          site: null
         }
       ]
     },
@@ -680,7 +684,8 @@ module.exports = {
         {
           id: 5,
           site_id: null,
-          name: 'Orphan Blog Without a Site'
+          name: 'Orphan Blog Without a Site',
+          site: null
         }
       ]
     },
@@ -725,7 +730,8 @@ module.exports = {
         {
           id: 5,
           site_id: null,
-          name: 'Orphan Blog Without a Site'
+          name: 'Orphan Blog Without a Site',
+          site: null
         }
       ]
     }
@@ -2397,7 +2403,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     },
@@ -2485,7 +2491,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     },
@@ -2573,7 +2579,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     }
@@ -2719,7 +2725,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     },
@@ -2863,7 +2869,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     },
@@ -3007,7 +3013,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     }
@@ -3395,7 +3401,7 @@ module.exports = {
           caption: 'this is a test image',
           ImageableId: 10,
           ImageableType: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     },
@@ -3483,7 +3489,7 @@ module.exports = {
           caption: 'this is a test image',
           ImageableId: 10,
           ImageableType: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     },
@@ -3571,7 +3577,7 @@ module.exports = {
           caption: 'this is a test image',
           ImageableId: 10,
           ImageableType: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     }
@@ -3717,7 +3723,7 @@ module.exports = {
           caption: 'this is a test image',
           ImageableId: 10,
           ImageableType: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     },
@@ -3861,7 +3867,7 @@ module.exports = {
           caption: 'this is a test image',
           ImageableId: 10,
           ImageableType: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     },
@@ -4005,7 +4011,7 @@ module.exports = {
           caption: 'this is a test image',
           ImageableId: 10,
           ImageableType: 'sites',
-          imageable: {}
+          imageable: null
         }
       ]
     }
@@ -4820,7 +4826,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageableParsed: {}
+          imageableParsed: null
         }
       ]
     },
@@ -4928,7 +4934,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageableParsed: {}
+          imageableParsed: null
         }
       ]
     },
@@ -5036,7 +5042,7 @@ module.exports = {
           caption: 'this is a test image',
           imageable_id: 10,
           imageable_type: 'sites',
-          imageableParsed: {}
+          imageableParsed: null
         }
       ]
     }

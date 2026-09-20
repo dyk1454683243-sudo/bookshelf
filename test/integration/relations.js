@@ -98,7 +98,8 @@ module.exports = function(Bookshelf) {
 
         it('does not load "hasOne" relationship when it doesn\'t exist (site -> meta)', function() {
           return new Site({id: 3}).fetch({withRelated: ['meta']}).then(function(site) {
-            expect(site.toJSON()).to.not.have.property('meta');
+            expect(site.toJSON().meta).to.equal(null);
+            expect(site.related('meta')).to.equal(null);
           });
         });
 
@@ -328,6 +329,69 @@ module.exports = function(Bookshelf) {
             .then(function(organization) {
               expect(organization.related('members').length).to.be.above(0);
             });
+        });
+      });
+
+      describe('Issue #2061 - missing single relations serialize as null', function() {
+        function findById(models, id) {
+          return models.find(function(model) {
+            return model.id === id;
+          });
+        }
+
+        it('returns null for missing hasOne relations with fetchAll', function() {
+          return Site.fetchAll({withRelated: ['meta']}).then(function(sites) {
+            var json = sites.toJSON();
+            expect(findById(json, 1).meta).to.have.property('id', 1);
+            expect(findById(json, 3).meta).to.equal(null);
+            expect(sites.get(3).related('meta')).to.equal(null);
+          });
+        });
+
+        it('returns null for missing hasOne relations with fetchPage', function() {
+          return Site.forge()
+            .fetchPage({withRelated: ['meta']})
+            .then(function(sites) {
+              var json = sites.toJSON();
+              expect(findById(json, 1).meta).to.have.property('id', 1);
+              expect(findById(json, 3).meta).to.equal(null);
+              expect(sites.get(3).related('meta')).to.equal(null);
+            });
+        });
+
+        it('returns null when every hasOne in a fetchAll is missing', function() {
+          return Site.where('id', 3)
+            .fetchAll({withRelated: ['meta']})
+            .then(function(sites) {
+              expect(sites.toJSON()[0].meta).to.equal(null);
+            });
+        });
+
+        it('returns null for missing belongsTo relations with fetchAll', function() {
+          return Blog.fetchAll({withRelated: ['site']}).then(function(blogs) {
+            var json = blogs.toJSON();
+            expect(findById(json, 1).site).to.have.property('id', 1);
+            expect(findById(json, 5).site).to.equal(null);
+            expect(blogs.get(5).related('site')).to.equal(null);
+          });
+        });
+
+        it('returns null for missing belongsTo relations with fetchPage', function() {
+          return Blog.forge()
+            .fetchPage({withRelated: ['site']})
+            .then(function(blogs) {
+              var json = blogs.toJSON();
+              expect(findById(json, 1).site).to.have.property('id', 1);
+              expect(findById(json, 5).site).to.equal(null);
+              expect(blogs.get(5).related('site')).to.equal(null);
+            });
+        });
+
+        it('returns null for a belongsTo with a null foreign key on a single fetch', function() {
+          return new Blog({id: 5}).fetch({withRelated: ['site']}).then(function(blog) {
+            expect(blog.toJSON().site).to.equal(null);
+            expect(blog.related('site')).to.equal(null);
+          });
         });
       });
 
