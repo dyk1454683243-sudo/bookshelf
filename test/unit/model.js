@@ -65,6 +65,32 @@ module.exports = function() {
             expect(updatedModel.toJSON()).to.eql({oldProp: 'b', newProp: 'a'});
           });
         });
+
+        it('should refresh using the original where clause when the model has no id (#2086)', () => {
+          const model = new Model();
+          const clonedQuery = {cloned: true};
+          const query = {
+            _statements: [{grouping: 'where'}],
+            clone: () => clonedQuery
+          };
+          model.sync = () => {
+            return {
+              query,
+              update: () => Promise.resolve(1)
+            };
+          };
+          const refresh = sinon.stub(model, 'refresh').resolves(model);
+
+          return model.save({name: 'patched'}, {patch: true}).then(function() {
+            equal(model._knex, clonedQuery);
+            expect(refresh).to.have.been.calledOnce;
+            expect(refresh).to.have.been.calledWith({
+              silent: true,
+              transacting: undefined,
+              constrainByQuery: true
+            });
+          });
+        });
       });
 
       describe('when the save method is insert', () => {

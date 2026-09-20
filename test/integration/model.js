@@ -1330,6 +1330,72 @@ module.exports = function(bookshelf) {
         });
       });
 
+      it('can patch via new Model().where() like Model.forge() (#2086)', function() {
+        return new Models.Author({site_id: 1, first_name: 'Issue', last_name: 'Original'}).save().then((created) => {
+          return new Models.Author()
+            .where({id: created.id, site_id: 1})
+            .save({last_name: 'Patched'}, {patch: true})
+            .then((updated) => {
+              equal(Number(updated.id), Number(created.id));
+              equal(updated.get('last_name'), 'Patched');
+              equal(updated.get('first_name'), 'Issue');
+              equal(Number(updated.get('site_id')), 1);
+
+              return Models.Author.forge({})
+                .where({id: created.id, site_id: 1})
+                .save({last_name: 'Forged'}, {patch: true});
+            })
+            .then((updated) => {
+              equal(updated.get('last_name'), 'Forged');
+              equal(updated.get('first_name'), 'Issue');
+              equal(Number(updated.id), Number(created.id));
+              return created.destroy();
+            });
+        });
+      });
+
+      it('refreshes after where() + patch even when in-memory attributes do not identify the row (#2086)', function() {
+        return new Models.Author({site_id: 1, first_name: 'Stored', last_name: 'Name'}).save().then((created) => {
+          return new Models.Author({first_name: 'DoesNotMatch'})
+            .where({id: created.id, site_id: 1})
+            .save({last_name: 'Refreshed'}, {patch: true})
+            .then((updated) => {
+              equal(updated.get('last_name'), 'Refreshed');
+              equal(updated.get('first_name'), 'Stored');
+              equal(Number(updated.id), Number(created.id));
+              return created.destroy();
+            });
+        });
+      });
+
+      it('can patch a timestamped model via new Model().where() (#2086)', function() {
+        return new Models.Admin({username: 'temp-2086', password: 'secret'}).save().then((created) => {
+          return new Models.Admin()
+            .where({id: created.id})
+            .save({username: 'patched-2086'}, {patch: true})
+            .then((updated) => {
+              equal(updated.get('username'), 'patched-2086');
+              equal(Number(updated.id), Number(created.id));
+              equal(updated.get('password'), 'secret');
+              expect(updated.get('created_at')).to.be.a('date');
+              return updated.destroy();
+            });
+        });
+      });
+
+      it('can update via new Model().where() with {method: "update"} (#2086)', function() {
+        return new Models.Author({site_id: 1, first_name: 'Method', last_name: 'Update'}).save().then((created) => {
+          return new Models.Author()
+            .where({id: created.id})
+            .save({last_name: 'Updated'}, {method: 'update'})
+            .then((updated) => {
+              equal(updated.get('last_name'), 'Updated');
+              equal(Number(updated.id), Number(created.id));
+              return created.destroy();
+            });
+        });
+      });
+
       it('rejects if the saving event throws an error', function() {
         var Test = bookshelf.Model.extend({
           tableName: 'test',
